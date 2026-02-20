@@ -15,24 +15,8 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
 .menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
 .menuBtn:hover{opacity:0.8;}
 #scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
-.touchControls{
-  display:flex !important; /* aseguramos que siempre se vea */
-  position:absolute;
-  bottom:10px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:1000;
-  gap:8px;
-}
-.touchBtn{
-  background:#ff3b6b;
-  color:white;
-  padding:20px;
-  border-radius:8px;
-  font-weight:bold;
-  user-select:none;
-  font-size:20px;
-}
+.touchControls{display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:2000; gap:10px;}
+.touchBtn{background:#ff3b6b;color:white;padding:15px 18px;border-radius:8px;font-weight:bold; user-select:none;}
 #gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
 </style>
 </head>
@@ -43,23 +27,19 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <h1>Cargando...</h1>
     <div id="loadingBar"><div id="loadingProgress"></div></div>
   </div>
-  <div id="menu">
-    <button class="menuBtn" onclick="togglePause()">Pausa</button>
-    <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
-    <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
+
+  <!-- Controles táctiles sobre el canvas -->
+  <div class="touchControls" id="touchControls">
+    <button class="touchBtn" onclick="moveUp()">↑</button>
+    <button class="touchBtn" onclick="moveDown()">↓</button>
+    <button class="touchBtn" onclick="moveLeft()">←</button>
+    <button class="touchBtn" onclick="moveRight()">→</button>
   </div>
+
   <div id="scoreBoard">
     <div>Puntaje: <span id="score">0</span></div>
     <div>Record: <span id="record">0</span></div>
     <div>Vidas: <span id="lives">3</span></div>
-  </div>
-
-  <!-- Controles táctiles siempre visibles -->
-  <div class="touchControls" id="touchControls">
-    <button class="touchBtn" data-dir="up">↑</button>
-    <button class="touchBtn" data-dir="down">↓</button>
-    <button class="touchBtn" data-dir="left">←</button>
-    <button class="touchBtn" data-dir="right">→</button>
   </div>
 
   <div id="gameOverScreen">
@@ -81,115 +61,129 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
 </audio>
 
 <script>
-const canvas=document.getElementById('gameCanvas');
-const ctx=canvas.getContext('2d');
-let score=0;
-let record=Number(localStorage.getItem('record'))||0;
-let lives=3;
-let gamePaused=false;
-let player={x:canvas.width/2-25,y:canvas.height-80,size:50};
-let obstacles=[];
-let speed=2;
-let bgMusic=document.getElementById('bgMusic');
-let hitSound=document.getElementById('hitSound');
-let explodeSound=document.getElementById('explodeSound');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let score = 0;
+let record = Number(localStorage.getItem('record')) || 0;
+let lives = 3;
+let gamePaused = false;
+let player = {x:canvas.width/2-25, y:canvas.height-80, size:50};
+let obstacles = [];
+let speed = 2;             // velocidad inicial más lenta
+let speedTimer = 0;        // contador para aumento cada 10 segundos
+let bgMusic = document.getElementById('bgMusic');
+let hitSound = document.getElementById('hitSound');
+let explodeSound = document.getElementById('explodeSound');
+
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+if(isMobile) document.getElementById('touchControls').style.display='flex';
 
 // Loading
-let loadProgress=0;
-const loadingInterval=setInterval(()=>{
-  loadProgress+=5;
-  document.getElementById('loadingProgress').style.width=loadProgress+'%';
-  if(loadProgress>=100){clearInterval(loadingInterval); document.getElementById('loadingScreen').style.display='none'; startGame();}
+let loadProgress = 0;
+const loadingInterval = setInterval(()=>{
+  loadProgress += 5;
+  document.getElementById('loadingProgress').style.width = loadProgress + '%';
+  if(loadProgress>=100){
+    clearInterval(loadingInterval);
+    document.getElementById('loadingScreen').style.display='none';
+    startGame();
+  }
 },100);
 
-// Controles
-let keys={};
-document.addEventListener('keydown',e=>{keys[e.key]=true;});
-document.addEventListener('keyup',e=>{keys[e.key]=false;});
+// Controls
+let keys = {};
+document.addEventListener('keydown', e => {keys[e.key] = true;});
+document.addEventListener('keyup', e => {keys[e.key] = false;});
 
-function moveUp(){player.y-=15;}
-function moveDown(){player.y+=15;}
-function moveLeft(){player.x-=15;}
-function moveRight(){player.x+=15;}
+function moveUp(){player.y -= 15;}
+function moveDown(){player.y += 15;}
+function moveLeft(){player.x -= 15;}
+function moveRight(){player.x += 15;}
 
-// Botones táctiles siempre activos
-const touchBtns = document.querySelectorAll('.touchBtn');
-touchBtns.forEach(btn => {
-    let interval;
-    btn.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const dir = btn.getAttribute('data-dir');
-        interval = setInterval(()=>{
-            if(dir==='up') player.y -=5;
-            if(dir==='down') player.y +=5;
-            if(dir==='left') player.x -=5;
-            if(dir==='right') player.x +=5;
-            player.x = Math.max(0, Math.min(canvas.width-50, player.x));
-            player.y = Math.max(50, Math.min(canvas.height, player.y));
-        },16);
-    });
-    btn.addEventListener('touchend', e => {clearInterval(interval);});
-    btn.addEventListener('touchcancel', e => {clearInterval(interval);});
-});
+function togglePause(){
+  gamePaused = !gamePaused; 
+  if(gamePaused) bgMusic.pause();
+  else {bgMusic.play(); requestAnimationFrame(gameLoop);}
+}
 
-// Pause y reinicio
-function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
-function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);}
+function restartGame(){
+  score=0; lives=3; obstacles=[]; speed=2; speedTimer=0;
+  player.x=canvas.width/2-25; player.y=canvas.height-80;
+  document.getElementById('gameOverScreen').style.display='none';
+  gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);
+}
+
 function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
-function spawnObstacle(){let size=50; let x=Math.random()*(canvas.width-size); obstacles.push({x:x,y:-size,size:size});}
 
-// Dibujar
+function spawnObstacle(){
+  let size = 50;
+  let x = Math.random()*(canvas.width-size);
+  obstacles.push({x:x, y:-size, size:size});
+}
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.font='50px Arial';
   ctx.fillText('❤️',player.x,player.y);
   ctx.font='50px Arial';
-  obstacles.forEach(o=>{ctx.fillText('💔',o.x,o.y);});
+  obstacles.forEach(o => ctx.fillText('💔', o.x, o.y));
 }
 
-// Update
 function update(){
   if(gamePaused) return;
 
-  if(keys['w']||keys['ArrowUp']) player.y-=5;
-  if(keys['s']||keys['ArrowDown']) player.y+=5;
-  if(keys['a']||keys['ArrowLeft']) player.x-=5;
-  if(keys['d']||keys['ArrowRight']) player.x+=5;
+  // Movimientos
+  if(keys['w']||keys['ArrowUp']) player.y -= 5;
+  if(keys['s']||keys['ArrowDown']) player.y += 5;
+  if(keys['a']||keys['ArrowLeft']) player.x -= 5;
+  if(keys['d']||keys['ArrowRight']) player.x += 5;
 
-  player.x=Math.max(0,Math.min(canvas.width-50,player.x));
-  player.y=Math.max(50,Math.min(canvas.height,player.y));
+  // Límites
+  player.x = Math.max(0, Math.min(canvas.width-50, player.x));
+  player.y = Math.max(50, Math.min(canvas.height, player.y));
 
-  obstacles.forEach(o=>o.y+=speed);
+  // Obstáculos
+  obstacles.forEach(o => o.y += speed);
 
+  // Colisiones
   obstacles.forEach((o,i)=>{
     if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
       hitSound.play();
       if(navigator.vibrate) navigator.vibrate(100);
       lives--;
       obstacles.splice(i,1);
-      if(lives<=0){gameOver();}
+      if(lives<=0) gameOver();
     }
   });
 
-  obstacles=obstacles.filter(o=>o.y<canvas.height+50);
+  obstacles = obstacles.filter(o => o.y < canvas.height + 50);
 
+  // Puntaje
   score++;
-  if(score%20===0) speed+=0.5;
-  if(score>record){record=score; localStorage.setItem('record',record);}
-  document.getElementById('score').innerText=score;
-  document.getElementById('record').innerText=record;
-  document.getElementById('lives').innerText=lives;
+  document.getElementById('score').innerText = score;
+  if(score > record){record=score; localStorage.setItem('record',record);}
+  document.getElementById('record').innerText = record;
+  document.getElementById('lives').innerText = lives;
 
-  if(Math.random()<0.02) spawnObstacle();
+  // Aumentar velocidad cada 10 segundos
+  speedTimer++;
+  if(speedTimer >= 600){ // 60fps * 10s ≈ 600 frames
+    speed += 0.3;
+    speedTimer = 0;
+  }
+
+  // Generar obstáculos
+  if(Math.random() < 0.02) spawnObstacle();
 }
 
-// Game Loop
-function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}}
+function gameLoop(){
+  if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}
+}
 
-// Game Over
 function gameOver(){
   explodeSound.play();
-  document.getElementById('finalScore').innerText=score;
+  document.getElementById('finalScore').innerText = score;
   document.getElementById('gameOverScreen').style.display='flex';
   bgMusic.pause();
 }
