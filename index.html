@@ -51,7 +51,7 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
   </div>
 </div>
 
-<audio id="bgMusic" loop>
+<audio id="bgMusic" loop autoplay>
   <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 <audio id="hitSound">
@@ -74,12 +74,10 @@ let speed=2;
 let bgMusic=document.getElementById('bgMusic');
 let hitSound=document.getElementById('hitSound');
 let explodeSound=document.getElementById('explodeSound');
-
-// Detect mobile
 const isMobile= /Mobi|Android/i.test(navigator.userAgent);
 if(isMobile) document.getElementById('touchControls').style.display='flex';
 
-// Loading screen
+// Loading
 let loadProgress=0;
 const loadingInterval=setInterval(()=>{
   loadProgress+=5;
@@ -98,55 +96,45 @@ function moveLeft(){player.x-=15;}
 function moveRight(){player.x+=15;}
 
 function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
-function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; bgMusic.play(); requestAnimationFrame(gameLoop);}
+function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);}
 
-// Game loop
 function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
-function spawnObstacle(){
-  let size=50;
-  let x=Math.random()*(canvas.width-size);
-  obstacles.push({x:x, y:-size, size:size});
-}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);
-  // Player
+
+function spawnObstacle(){let size=50; let x=Math.random()*(canvas.width-size); obstacles.push({x:x,y:-size,size:size});}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.font='50px Arial';
   ctx.fillText('❤️',player.x,player.y);
-  // Obstacles
   ctx.font='50px Arial';
-  obstacles.forEach(o=>{
-    ctx.fillText('💔',o.x,o.y);
-  });
+  obstacles.forEach(o=>{ctx.fillText('💔',o.x,o.y);});
 }
 
 function update(){
   if(gamePaused) return;
-  // Player movement
+
   if(keys['w']||keys['ArrowUp']) player.y-=5;
   if(keys['s']||keys['ArrowDown']) player.y+=5;
   if(keys['a']||keys['ArrowLeft']) player.x-=5;
   if(keys['d']||keys['ArrowRight']) player.x+=5;
 
-  // Boundaries
   player.x=Math.max(0,Math.min(canvas.width-50,player.x));
   player.y=Math.max(50,Math.min(canvas.height,player.y));
 
-  // Obstacles
   obstacles.forEach(o=>o.y+=speed);
 
-  // Collision
   obstacles.forEach((o,i)=>{
     if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
       hitSound.play();
+      if(navigator.vibrate) navigator.vibrate(100);
       lives--;
       obstacles.splice(i,1);
-      if(lives<=0) gameOver();
+      if(lives<=0){gameOver();}
     }
   });
 
-  // Remove offscreen
   obstacles=obstacles.filter(o=>o.y<canvas.height+50);
 
-  // Increase score
   score++;
   if(score%20===0) speed+=0.5;
   if(score>record){record=score; localStorage.setItem('record',record);}
@@ -154,7 +142,6 @@ function update(){
   document.getElementById('record').innerText=record;
   document.getElementById('lives').innerText=lives;
 
-  // Spawn obstacles
   if(Math.random()<0.02) spawnObstacle();
 }
 
@@ -162,9 +149,9 @@ function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(game
 
 function gameOver(){
   explodeSound.play();
-  gamePaused=true;
   document.getElementById('finalScore').innerText=score;
   document.getElementById('gameOverScreen').style.display='flex';
+  // En lugar de bloquear, dejamos que se pueda reiniciar
   bgMusic.pause();
 }
 </script>
