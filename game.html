@@ -15,8 +15,24 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
 .menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
 .menuBtn:hover{opacity:0.8;}
 #scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
-.touchControls{display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%); z-index:1000;gap:8px;}
-.touchBtn{background:#ff3b6b;color:white;padding:15px;border-radius:8px;font-weight:bold; user-select:none;}
+.touchControls{
+  display:flex !important; /* aseguramos que siempre se vea */
+  position:absolute;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:1000;
+  gap:8px;
+}
+.touchBtn{
+  background:#ff3b6b;
+  color:white;
+  padding:20px;
+  border-radius:8px;
+  font-weight:bold;
+  user-select:none;
+  font-size:20px;
+}
 #gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
 </style>
 </head>
@@ -37,12 +53,15 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <div>Record: <span id="record">0</span></div>
     <div>Vidas: <span id="lives">3</span></div>
   </div>
+
+  <!-- Controles táctiles siempre visibles -->
   <div class="touchControls" id="touchControls">
     <button class="touchBtn" data-dir="up">↑</button>
     <button class="touchBtn" data-dir="down">↓</button>
     <button class="touchBtn" data-dir="left">←</button>
     <button class="touchBtn" data-dir="right">→</button>
   </div>
+
   <div id="gameOverScreen">
     <h1>💔 ¡Perdiste!</h1>
     <p>Puntaje final: <span id="finalScore">0</span></p>
@@ -75,9 +94,6 @@ let bgMusic=document.getElementById('bgMusic');
 let hitSound=document.getElementById('hitSound');
 let explodeSound=document.getElementById('explodeSound');
 
-const isMobile= /Mobi|Android/i.test(navigator.userAgent);
-if(isMobile) document.getElementById('touchControls').style.display='flex';
-
 // Loading
 let loadProgress=0;
 const loadingInterval=setInterval(()=>{
@@ -86,7 +102,7 @@ const loadingInterval=setInterval(()=>{
   if(loadProgress>=100){clearInterval(loadingInterval); document.getElementById('loadingScreen').style.display='none'; startGame();}
 },100);
 
-// Controls
+// Controles
 let keys={};
 document.addEventListener('keydown',e=>{keys[e.key]=true;});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
@@ -96,7 +112,7 @@ function moveDown(){player.y+=15;}
 function moveLeft(){player.x-=15;}
 function moveRight(){player.x+=15;}
 
-// Botones táctiles para móviles
+// Botones táctiles siempre activos
 const touchBtns = document.querySelectorAll('.touchBtn');
 touchBtns.forEach(btn => {
     let interval;
@@ -113,6 +129,7 @@ touchBtns.forEach(btn => {
         },16);
     });
     btn.addEventListener('touchend', e => {clearInterval(interval);});
+    btn.addEventListener('touchcancel', e => {clearInterval(interval);});
 });
 
 // Pause y reinicio
