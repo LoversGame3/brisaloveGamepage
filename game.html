@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💖 Mini Juego Amor - Evita que el corazón se rompa</title>
+<style>
+body{
+  margin:0;
+  font-family:Poppins,sans-serif;
+  background:linear-gradient(120deg,#ff4d6d,#9b59ff);
+  overflow:hidden;
+  color:white;
+}
+#cargaScreen{
+  display:flex;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  z-index:1000;
+}
+#barraCarga{
+  width:80%;
+  background:rgba(255,255,255,0.3);
+  border-radius:20px;
+  overflow:hidden;
+  margin:20px auto;
+}
+#barraFill{width:0%;height:20px;background:linear-gradient(45deg,#ff3b6b,#ff7aa2);border-radius:20px;transition:width 0.3s;}
+#gameScreen{display:none;position:relative;width:100vw;height:100vh;background:linear-gradient(135deg,#ff7aa2,#9b59ff);}
+#player{
+  position:absolute;width:50px;height:50px;font-size:50px;text-align:center;top:80%;left:50%;transform:translate(-50%,0);
+}
+.heartEnemy{
+  position:absolute;width:50px;height:50px;font-size:50px;text-align:center;
+}
+#info{
+  position:absolute;top:10px;left:10px;font-size:18px;
+}
+#btnRestart{
+  display:none;
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  padding:15px 25px;
+  font-size:20px;
+  border:none;
+  border-radius:15px;
+  background:linear-gradient(45deg,#ff3b6b,#ff7aa2);
+  color:white;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div id="cargaScreen">
+<h2>Cargando Mini Juego… 💖</h2>
+<div id="barraCarga"><div id="barraFill"></div></div>
+</div>
+
+<div id="gameScreen">
+<div id="info">Score: <span id="score">0</span> | Record: <span id="record">0</span> | Pausa: <span id="pauseStatus">OFF</span></div>
+<div id="player">💖</div>
+<button id="btnRestart" onclick="startGame()">Volver a jugar</button>
+</div>
+
+<script>
+// CARGA DE 5 SEGUNDOS
+let carga=0;
+let barra=document.getElementById("barraFill");
+let cargaInterval=setInterval(()=>{
+carga+=2;
+barra.style.width=carga+"%";
+if(carga>=100){
+  clearInterval(cargaInterval);
+  document.getElementById("cargaScreen").style.display="none";
+  document.getElementById("gameScreen").style.display="block";
+  startGame();
+}
+},100);
+
+// VARIABLES DEL JUEGO
+let player=document.getElementById("player");
+let gameScreen=document.getElementById("gameScreen");
+let scoreElem=document.getElementById("score");
+let recordElem=document.getElementById("record");
+let btnRestart=document.getElementById("btnRestart");
+let score=0;
+let record=Number(localStorage.getItem("recordHeart"))||0;
+recordElem.innerText=record;
+let keys={};
+let enemies=[];
+let gameInterval;
+let spawnInterval;
+let paused=false;
+
+// CONTROLES
+document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape') togglePause();});
+document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+
+function togglePause(){
+  paused=!paused;
+  document.getElementById("pauseStatus").innerText=paused?'ON':'OFF';
+}
+
+// JUEGO
+function startGame(){
+  // reset
+  score=0;
+  scoreElem.innerText=score;
+  player.style.top='80%';
+  player.style.left='50%';
+  btnRestart.style.display='none';
+  enemies.forEach(e=>e.remove());
+  enemies=[];
+  clearInterval(gameInterval);
+  clearInterval(spawnInterval);
+
+  // spawn enemies
+  spawnInterval=setInterval(spawnEnemy,800);
+
+  // loop principal
+  gameInterval=setInterval(gameLoop,20);
+}
+
+function spawnEnemy(){
+  if(paused) return;
+  let enemy=document.createElement('div');
+  enemy.classList.add('heartEnemy');
+  enemy.innerText='💔';
+  enemy.style.top='-60px';
+  enemy.style.left=Math.random()*(window.innerWidth-50)+'px';
+  enemy.speed=2+Math.random()*3;
+  gameScreen.appendChild(enemy);
+  enemies.push(enemy);
+}
+
+function gameLoop(){
+  if(paused) return;
+  // mover jugador
+  let top=parseFloat(player.style.top);
+  let left=parseFloat(player.style.left);
+  if(keys['w']) top-=5;
+  if(keys['s']) top+=5;
+  if(keys['a']) left-=5;
+  if(keys['d']) left+=5;
+  top=Math.max(0,Math.min(window.innerHeight-50,top));
+  left=Math.max(0,Math.min(window.innerWidth-50,left));
+  player.style.top=top+'px';
+  player.style.left=left+'px';
+
+  // mover enemigos
+  enemies.forEach(e=>{
+    e.style.top=parseFloat(e.style.top)+e.speed+'px';
+    // colisión
+    if(collides(player,e)){
+      endGame();
+    }
+    // eliminar fuera de pantalla
+    if(parseFloat(e.style.top)>window.innerHeight){
+      e.remove();
+      enemies=enemies.filter(x=>x!==e);
+      score++;
+      scoreElem.innerText=score;
+      if(score>record){
+        record=score;
+        recordElem.innerText=record;
+        localStorage.setItem('recordHeart',record);
+      }
+    }
+  });
+}
+
+function collides(a,b){
+  let rect1=a.getBoundingClientRect();
+  let rect2=b.getBoundingClientRect();
+  return !(rect1.top>rect2.bottom || rect1.bottom<rect2.top || rect1.left>rect2.right || rect1.right<rect2.left);
+}
+
+function endGame(){
+  clearInterval(gameInterval);
+  clearInterval(spawnInterval);
+  btnRestart.style.display='block';
+  enemies.forEach(e=>e.remove());
+  enemies=[];
+  alert('💔 ¡El corazón se rompió! Score final: '+score);
+}
+</script>
+</body>
+</html>

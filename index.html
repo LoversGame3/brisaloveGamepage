@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>❤️ Corazón vs Corazones Rotos 💔</title>
+<style>
+body, html {margin:0; padding:0; background:black; font-family:monospace; overflow:hidden;}
+#gameContainer{position:relative;width:100vw;height:100vh; display:flex; justify-content:center; align-items:center;}
+#gameCanvas{background:#111; border:4px solid #ff3b6b;}
+#loadingScreen{position:absolute;inset:0; background:#111; color:#ff3b6b; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:3000;}
+#loadingBar{width:300px; height:20px; border:2px solid #ff3b6b; margin-top:20px; overflow:hidden;}
+#loadingProgress{width:0%; height:100%; background:#ff7aa2; transition:width 0.2s;}
+#menu{position:absolute;top:10px;left:10px;color:white; display:flex; gap:10px; z-index:1000;}
+.menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
+.menuBtn:hover{opacity:0.8;}
+#scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
+.touchControls{display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%); z-index:1000;gap:8px;}
+.touchBtn{background:#ff3b6b;color:white;padding:15px;border-radius:8px;font-weight:bold; user-select:none;}
+#gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="gameCanvas" width="600" height="800"></canvas>
+  <div id="loadingScreen">
+    <h1>Cargando...</h1>
+    <div id="loadingBar"><div id="loadingProgress"></div></div>
+  </div>
+  <div id="menu">
+    <button class="menuBtn" onclick="togglePause()">Pausa</button>
+    <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
+    <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
+  </div>
+  <div id="scoreBoard">
+    <div>Puntaje: <span id="score">0</span></div>
+    <div>Record: <span id="record">0</span></div>
+    <div>Vidas: <span id="lives">3</span></div>
+  </div>
+  <div class="touchControls" id="touchControls">
+    <button class="touchBtn" onclick="moveUp()">↑</button>
+    <button class="touchBtn" onclick="moveDown()">↓</button>
+    <button class="touchBtn" onclick="moveLeft()">←</button>
+    <button class="touchBtn" onclick="moveRight()">→</button>
+  </div>
+  <div id="gameOverScreen">
+    <h1>💔 ¡Perdiste!</h1>
+    <p>Puntaje final: <span id="finalScore">0</span></p>
+    <button class="menuBtn" onclick="restartGame()">Volver a jugar</button>
+    <button class="menuBtn" onclick="window.location='index.html'">Regresar al inicio</button>
+  </div>
+</div>
+
+<audio id="bgMusic" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+<audio id="hitSound">
+  <source src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3" type="audio/mpeg">
+</audio>
+<audio id="explodeSound">
+  <source src="https://freesound.org/data/previews/351/351656_5121236-lq.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+let score=0;
+let record=Number(localStorage.getItem('record'))||0;
+let lives=3;
+let gamePaused=false;
+let player={x:canvas.width/2-25,y:canvas.height-80,size:50};
+let obstacles=[];
+let speed=2;
+let bgMusic=document.getElementById('bgMusic');
+let hitSound=document.getElementById('hitSound');
+let explodeSound=document.getElementById('explodeSound');
+
+// Detect mobile
+const isMobile= /Mobi|Android/i.test(navigator.userAgent);
+if(isMobile) document.getElementById('touchControls').style.display='flex';
+
+// Loading screen
+let loadProgress=0;
+const loadingInterval=setInterval(()=>{
+  loadProgress+=5;
+  document.getElementById('loadingProgress').style.width=loadProgress+'%';
+  if(loadProgress>=100){clearInterval(loadingInterval); document.getElementById('loadingScreen').style.display='none'; startGame();}
+},100);
+
+// Controls
+let keys={};
+document.addEventListener('keydown',e=>{keys[e.key]=true;});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function moveUp(){player.y-=15;}
+function moveDown(){player.y+=15;}
+function moveLeft(){player.x-=15;}
+function moveRight(){player.x+=15;}
+
+function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
+function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; bgMusic.play(); requestAnimationFrame(gameLoop);}
+
+// Game loop
+function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
+function spawnObstacle(){
+  let size=50;
+  let x=Math.random()*(canvas.width-size);
+  obstacles.push({x:x, y:-size, size:size});
+}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Player
+  ctx.font='50px Arial';
+  ctx.fillText('❤️',player.x,player.y);
+  // Obstacles
+  ctx.font='50px Arial';
+  obstacles.forEach(o=>{
+    ctx.fillText('💔',o.x,o.y);
+  });
+}
+
+function update(){
+  if(gamePaused) return;
+  // Player movement
+  if(keys['w']||keys['ArrowUp']) player.y-=5;
+  if(keys['s']||keys['ArrowDown']) player.y+=5;
+  if(keys['a']||keys['ArrowLeft']) player.x-=5;
+  if(keys['d']||keys['ArrowRight']) player.x+=5;
+
+  // Boundaries
+  player.x=Math.max(0,Math.min(canvas.width-50,player.x));
+  player.y=Math.max(50,Math.min(canvas.height,player.y));
+
+  // Obstacles
+  obstacles.forEach(o=>o.y+=speed);
+
+  // Collision
+  obstacles.forEach((o,i)=>{
+    if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
+      hitSound.play();
+      lives--;
+      obstacles.splice(i,1);
+      if(lives<=0) gameOver();
+    }
+  });
+
+  // Remove offscreen
+  obstacles=obstacles.filter(o=>o.y<canvas.height+50);
+
+  // Increase score
+  score++;
+  if(score%20===0) speed+=0.5;
+  if(score>record){record=score; localStorage.setItem('record',record);}
+  document.getElementById('score').innerText=score;
+  document.getElementById('record').innerText=record;
+  document.getElementById('lives').innerText=lives;
+
+  // Spawn obstacles
+  if(Math.random()<0.02) spawnObstacle();
+}
+
+function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}}
+
+function gameOver(){
+  explodeSound.play();
+  gamePaused=true;
+  document.getElementById('finalScore').innerText=score;
+  document.getElementById('gameOverScreen').style.display='flex';
+  bgMusic.pause();
+}
+</script>
+</body>
+</html>
