@@ -11,28 +11,26 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
 #loadingScreen{position:absolute;inset:0; background:#111; color:#ff3b6b; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:3000;}
 #loadingBar{width:300px; height:20px; border:2px solid #ff3b6b; margin-top:20px; overflow:hidden;}
 #loadingProgress{width:0%; height:100%; background:#ff7aa2; transition:width 0.2s;}
-#menu{position:absolute;top:10px;left:10px;color:white; display:flex; gap:10px; z-index:1000;}
-.menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
-.menuBtn:hover{opacity:0.8;}
 #scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
-.touchControls{display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:2000; gap:10px;}
-.touchBtn{background:#ff3b6b;color:white;padding:15px 18px;border-radius:8px;font-weight:bold; user-select:none;}
+.touchControls{display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:2000; gap:12px; display:flex;}
+.touchBtn{background:#ff3b6b;color:white;padding:18px 20px;border-radius:10px;font-weight:bold; user-select:none; font-size:20px;}
 #gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
 </style>
 </head>
 <body>
 <div id="gameContainer">
   <canvas id="gameCanvas" width="600" height="800"></canvas>
+  
   <div id="loadingScreen">
     <h1>Cargando...</h1>
     <div id="loadingBar"><div id="loadingProgress"></div></div>
   </div>
 
-  <!-- Controles táctiles sobre el canvas -->
+  <!-- Controles táctiles -->
   <div class="touchControls" id="touchControls">
     <button class="touchBtn" onclick="moveUp()">↑</button>
-    <button class="touchBtn" onclick="moveDown()">↓</button>
     <button class="touchBtn" onclick="moveLeft()">←</button>
+    <button class="touchBtn" onclick="moveDown()">↓</button>
     <button class="touchBtn" onclick="moveRight()">→</button>
   </div>
 
@@ -45,8 +43,7 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
   <div id="gameOverScreen">
     <h1>💔 ¡Perdiste!</h1>
     <p>Puntaje final: <span id="finalScore">0</span></p>
-    <button class="menuBtn" onclick="restartGame()">Volver a jugar</button>
-    <button class="menuBtn" onclick="window.location='index.html'">Regresar al inicio</button>
+    <button class="touchBtn" onclick="restartGame()">Volver a jugar</button>
   </div>
 </div>
 
@@ -70,12 +67,13 @@ let lives = 3;
 let gamePaused = false;
 let player = {x:canvas.width/2-25, y:canvas.height-80, size:50};
 let obstacles = [];
-let speed = 2;             // velocidad inicial más lenta
-let speedTimer = 0;        // contador para aumento cada 10 segundos
+let speed = 2;
+let speedTimer = 0;
 let bgMusic = document.getElementById('bgMusic');
 let hitSound = document.getElementById('hitSound');
 let explodeSound = document.getElementById('explodeSound');
 
+// Mostrar controles táctiles si es móvil
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 if(isMobile) document.getElementById('touchControls').style.display='flex';
 
@@ -91,20 +89,21 @@ const loadingInterval = setInterval(()=>{
   }
 },100);
 
-// Controls
+// Controles de teclado
 let keys = {};
-document.addEventListener('keydown', e => {keys[e.key] = true;});
-document.addEventListener('keyup', e => {keys[e.key] = false;});
+document.addEventListener('keydown', e => { keys[e.key] = true; });
+document.addEventListener('keyup', e => { keys[e.key] = false; });
 
+// Funciones de movimiento táctil
 function moveUp(){player.y -= 15;}
 function moveDown(){player.y += 15;}
 function moveLeft(){player.x -= 15;}
 function moveRight(){player.x += 15;}
 
 function togglePause(){
-  gamePaused = !gamePaused; 
+  gamePaused = !gamePaused;
   if(gamePaused) bgMusic.pause();
-  else {bgMusic.play(); requestAnimationFrame(gameLoop);}
+  else { bgMusic.play(); requestAnimationFrame(gameLoop); }
 }
 
 function restartGame(){
@@ -115,7 +114,6 @@ function restartGame(){
 }
 
 function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
-
 function spawnObstacle(){
   let size = 50;
   let x = Math.random()*(canvas.width-size);
@@ -133,7 +131,7 @@ function draw(){
 function update(){
   if(gamePaused) return;
 
-  // Movimientos
+  // Movimientos teclado
   if(keys['w']||keys['ArrowUp']) player.y -= 5;
   if(keys['s']||keys['ArrowDown']) player.y += 5;
   if(keys['a']||keys['ArrowLeft']) player.x -= 5;
@@ -168,7 +166,7 @@ function update(){
 
   // Aumentar velocidad cada 10 segundos
   speedTimer++;
-  if(speedTimer >= 600){ // 60fps * 10s ≈ 600 frames
+  if(speedTimer >= 600){ // 60fps * 10s
     speed += 0.3;
     speedTimer = 0;
   }
