@@ -3,189 +3,156 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💖 Mini Juego Amor - Evita que el corazón se rompa</title>
+<title>❤️ Corazón vs Corazones Rotos 💔</title>
 <style>
-body{
-  margin:0;
-  font-family:Poppins,sans-serif;
-  background:linear-gradient(120deg,#ff4d6d,#9b59ff);
-  overflow:hidden;
-  color:white;
-}
-#cargaScreen{
-  display:flex;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.8);
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  z-index:1000;
-}
-#barraCarga{
-  width:80%;
-  background:rgba(255,255,255,0.3);
-  border-radius:20px;
-  overflow:hidden;
-  margin:20px auto;
-}
-#barraFill{width:0%;height:20px;background:linear-gradient(45deg,#ff3b6b,#ff7aa2);border-radius:20px;transition:width 0.3s;}
-#gameScreen{display:none;position:relative;width:100vw;height:100vh;background:linear-gradient(135deg,#ff7aa2,#9b59ff);}
-#player{
-  position:absolute;width:50px;height:50px;font-size:50px;text-align:center;top:80%;left:50%;transform:translate(-50%,0);
-}
-.heartEnemy{
-  position:absolute;width:50px;height:50px;font-size:50px;text-align:center;
-}
-#info{
-  position:absolute;top:10px;left:10px;font-size:18px;
-}
-#btnRestart{
-  display:none;
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  padding:15px 25px;
-  font-size:20px;
-  border:none;
-  border-radius:15px;
-  background:linear-gradient(45deg,#ff3b6b,#ff7aa2);
-  color:white;
-  cursor:pointer;
-}
+body, html {margin:0; padding:0; background:black; font-family:monospace; overflow:hidden;}
+#gameContainer{position:relative;width:100vw;height:100vh; display:flex; justify-content:center; align-items:center;}
+#gameCanvas{background:#111; border:4px solid #ff3b6b;}
+#loadingScreen{position:absolute;inset:0; background:#111; color:#ff3b6b; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:3000;}
+#loadingBar{width:300px; height:20px; border:2px solid #ff3b6b; margin-top:20px; overflow:hidden;}
+#loadingProgress{width:0%; height:100%; background:#ff7aa2; transition:width 0.2s;}
+#menu{position:absolute;top:10px;left:10px;color:white; display:flex; gap:10px; z-index:1000;}
+.menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
+.menuBtn:hover{opacity:0.8;}
+#scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
+.touchControls{display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%); z-index:1000;gap:8px;}
+.touchBtn{background:#ff3b6b;color:white;padding:15px;border-radius:8px;font-weight:bold; user-select:none;}
+#gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
 </style>
 </head>
 <body>
-
-<div id="cargaScreen">
-<h2>Cargando Mini Juego… 💖</h2>
-<div id="barraCarga"><div id="barraFill"></div></div>
+<div id="gameContainer">
+  <canvas id="gameCanvas" width="600" height="800"></canvas>
+  <div id="loadingScreen">
+    <h1>Cargando...</h1>
+    <div id="loadingBar"><div id="loadingProgress"></div></div>
+  </div>
+  <div id="menu">
+    <button class="menuBtn" onclick="togglePause()">Pausa</button>
+    <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
+    <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
+  </div>
+  <div id="scoreBoard">
+    <div>Puntaje: <span id="score">0</span></div>
+    <div>Record: <span id="record">0</span></div>
+    <div>Vidas: <span id="lives">3</span></div>
+  </div>
+  <div class="touchControls" id="touchControls">
+    <button class="touchBtn" onclick="moveUp()">↑</button>
+    <button class="touchBtn" onclick="moveDown()">↓</button>
+    <button class="touchBtn" onclick="moveLeft()">←</button>
+    <button class="touchBtn" onclick="moveRight()">→</button>
+  </div>
+  <div id="gameOverScreen">
+    <h1>💔 ¡Perdiste!</h1>
+    <p>Puntaje final: <span id="finalScore">0</span></p>
+    <button class="menuBtn" onclick="restartGame()">Volver a jugar</button>
+    <button class="menuBtn" onclick="window.location='index.html'">Regresar al inicio</button>
+  </div>
 </div>
 
-<div id="gameScreen">
-<div id="info">Score: <span id="score">0</span> | Record: <span id="record">0</span> | Pausa: <span id="pauseStatus">OFF</span></div>
-<div id="player">💖</div>
-<button id="btnRestart" onclick="startGame()">Volver a jugar</button>
-</div>
+<audio id="bgMusic" loop autoplay>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+<audio id="hitSound">
+  <source src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3" type="audio/mpeg">
+</audio>
+<audio id="explodeSound">
+  <source src="https://freesound.org/data/previews/351/351656_5121236-lq.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-// CARGA DE 5 SEGUNDOS
-let carga=0;
-let barra=document.getElementById("barraFill");
-let cargaInterval=setInterval(()=>{
-carga+=2;
-barra.style.width=carga+"%";
-if(carga>=100){
-  clearInterval(cargaInterval);
-  document.getElementById("cargaScreen").style.display="none";
-  document.getElementById("gameScreen").style.display="block";
-  startGame();
-}
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+let score=0;
+let record=Number(localStorage.getItem('record'))||0;
+let lives=3;
+let gamePaused=false;
+let player={x:canvas.width/2-25,y:canvas.height-80,size:50};
+let obstacles=[];
+let speed=2;
+let bgMusic=document.getElementById('bgMusic');
+let hitSound=document.getElementById('hitSound');
+let explodeSound=document.getElementById('explodeSound');
+const isMobile= /Mobi|Android/i.test(navigator.userAgent);
+if(isMobile) document.getElementById('touchControls').style.display='flex';
+
+// Loading
+let loadProgress=0;
+const loadingInterval=setInterval(()=>{
+  loadProgress+=5;
+  document.getElementById('loadingProgress').style.width=loadProgress+'%';
+  if(loadProgress>=100){clearInterval(loadingInterval); document.getElementById('loadingScreen').style.display='none'; startGame();}
 },100);
 
-// VARIABLES DEL JUEGO
-let player=document.getElementById("player");
-let gameScreen=document.getElementById("gameScreen");
-let scoreElem=document.getElementById("score");
-let recordElem=document.getElementById("record");
-let btnRestart=document.getElementById("btnRestart");
-let score=0;
-let record=Number(localStorage.getItem("recordHeart"))||0;
-recordElem.innerText=record;
+// Controls
 let keys={};
-let enemies=[];
-let gameInterval;
-let spawnInterval;
-let paused=false;
+document.addEventListener('keydown',e=>{keys[e.key]=true;});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-// CONTROLES
-document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape') togglePause();});
-document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+function moveUp(){player.y-=15;}
+function moveDown(){player.y+=15;}
+function moveLeft(){player.x-=15;}
+function moveRight(){player.x+=15;}
 
-function togglePause(){
-  paused=!paused;
-  document.getElementById("pauseStatus").innerText=paused?'ON':'OFF';
+function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
+function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);}
+
+function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
+
+function spawnObstacle(){let size=50; let x=Math.random()*(canvas.width-size); obstacles.push({x:x,y:-size,size:size});}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.font='50px Arial';
+  ctx.fillText('❤️',player.x,player.y);
+  ctx.font='50px Arial';
+  obstacles.forEach(o=>{ctx.fillText('💔',o.x,o.y);});
 }
 
-// JUEGO
-function startGame(){
-  // reset
-  score=0;
-  scoreElem.innerText=score;
-  player.style.top='80%';
-  player.style.left='50%';
-  btnRestart.style.display='none';
-  enemies.forEach(e=>e.remove());
-  enemies=[];
-  clearInterval(gameInterval);
-  clearInterval(spawnInterval);
+function update(){
+  if(gamePaused) return;
 
-  // spawn enemies
-  spawnInterval=setInterval(spawnEnemy,800);
+  if(keys['w']||keys['ArrowUp']) player.y-=5;
+  if(keys['s']||keys['ArrowDown']) player.y+=5;
+  if(keys['a']||keys['ArrowLeft']) player.x-=5;
+  if(keys['d']||keys['ArrowRight']) player.x+=5;
 
-  // loop principal
-  gameInterval=setInterval(gameLoop,20);
-}
+  player.x=Math.max(0,Math.min(canvas.width-50,player.x));
+  player.y=Math.max(50,Math.min(canvas.height,player.y));
 
-function spawnEnemy(){
-  if(paused) return;
-  let enemy=document.createElement('div');
-  enemy.classList.add('heartEnemy');
-  enemy.innerText='💔';
-  enemy.style.top='-60px';
-  enemy.style.left=Math.random()*(window.innerWidth-50)+'px';
-  enemy.speed=2+Math.random()*3;
-  gameScreen.appendChild(enemy);
-  enemies.push(enemy);
-}
+  obstacles.forEach(o=>o.y+=speed);
 
-function gameLoop(){
-  if(paused) return;
-  // mover jugador
-  let top=parseFloat(player.style.top);
-  let left=parseFloat(player.style.left);
-  if(keys['w']) top-=5;
-  if(keys['s']) top+=5;
-  if(keys['a']) left-=5;
-  if(keys['d']) left+=5;
-  top=Math.max(0,Math.min(window.innerHeight-50,top));
-  left=Math.max(0,Math.min(window.innerWidth-50,left));
-  player.style.top=top+'px';
-  player.style.left=left+'px';
-
-  // mover enemigos
-  enemies.forEach(e=>{
-    e.style.top=parseFloat(e.style.top)+e.speed+'px';
-    // colisión
-    if(collides(player,e)){
-      endGame();
-    }
-    // eliminar fuera de pantalla
-    if(parseFloat(e.style.top)>window.innerHeight){
-      e.remove();
-      enemies=enemies.filter(x=>x!==e);
-      score++;
-      scoreElem.innerText=score;
-      if(score>record){
-        record=score;
-        recordElem.innerText=record;
-        localStorage.setItem('recordHeart',record);
-      }
+  obstacles.forEach((o,i)=>{
+    if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
+      hitSound.play();
+      if(navigator.vibrate) navigator.vibrate(100);
+      lives--;
+      obstacles.splice(i,1);
+      if(lives<=0){gameOver();}
     }
   });
+
+  obstacles=obstacles.filter(o=>o.y<canvas.height+50);
+
+  score++;
+  if(score%20===0) speed+=0.5;
+  if(score>record){record=score; localStorage.setItem('record',record);}
+  document.getElementById('score').innerText=score;
+  document.getElementById('record').innerText=record;
+  document.getElementById('lives').innerText=lives;
+
+  if(Math.random()<0.02) spawnObstacle();
 }
 
-function collides(a,b){
-  let rect1=a.getBoundingClientRect();
-  let rect2=b.getBoundingClientRect();
-  return !(rect1.top>rect2.bottom || rect1.bottom<rect2.top || rect1.left>rect2.right || rect1.right<rect2.left);
-}
+function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}}
 
-function endGame(){
-  clearInterval(gameInterval);
-  clearInterval(spawnInterval);
-  btnRestart.style.display='block';
-  enemies.forEach(e=>e.remove());
-  enemies=[];
-  alert('💔 ¡El corazón se rompió! Score final: '+score);
+function gameOver(){
+  explodeSound.play();
+  document.getElementById('finalScore').innerText=score;
+  document.getElementById('gameOverScreen').style.display='flex';
+  // En lugar de bloquear, dejamos que se pueda reiniciar
+  bgMusic.pause();
 }
 </script>
 </body>
