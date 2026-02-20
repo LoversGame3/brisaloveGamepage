@@ -38,10 +38,10 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <div>Vidas: <span id="lives">3</span></div>
   </div>
   <div class="touchControls" id="touchControls">
-    <button class="touchBtn" onclick="moveUp()">↑</button>
-    <button class="touchBtn" onclick="moveDown()">↓</button>
-    <button class="touchBtn" onclick="moveLeft()">←</button>
-    <button class="touchBtn" onclick="moveRight()">→</button>
+    <button class="touchBtn" data-dir="up">↑</button>
+    <button class="touchBtn" data-dir="down">↓</button>
+    <button class="touchBtn" data-dir="left">←</button>
+    <button class="touchBtn" data-dir="right">→</button>
   </div>
   <div id="gameOverScreen">
     <h1>💔 ¡Perdiste!</h1>
@@ -49,11 +49,6 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <button class="menuBtn" onclick="restartGame()">Volver a jugar</button>
     <button class="menuBtn" onclick="window.location='index.html'">Regresar al inicio</button>
   </div>
-</div>
-<div id="menu">
-  <button class="menuBtn" onclick="togglePause()">Pausa</button>
-  <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
-  <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
 </div>
 
 <audio id="bgMusic" loop autoplay>
@@ -79,6 +74,7 @@ let speed=2;
 let bgMusic=document.getElementById('bgMusic');
 let hitSound=document.getElementById('hitSound');
 let explodeSound=document.getElementById('explodeSound');
+
 const isMobile= /Mobi|Android/i.test(navigator.userAgent);
 if(isMobile) document.getElementById('touchControls').style.display='flex';
 
@@ -100,13 +96,32 @@ function moveDown(){player.y+=15;}
 function moveLeft(){player.x-=15;}
 function moveRight(){player.x+=15;}
 
+// Botones táctiles para móviles
+const touchBtns = document.querySelectorAll('.touchBtn');
+touchBtns.forEach(btn => {
+    let interval;
+    btn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const dir = btn.getAttribute('data-dir');
+        interval = setInterval(()=>{
+            if(dir==='up') player.y -=5;
+            if(dir==='down') player.y +=5;
+            if(dir==='left') player.x -=5;
+            if(dir==='right') player.x +=5;
+            player.x = Math.max(0, Math.min(canvas.width-50, player.x));
+            player.y = Math.max(50, Math.min(canvas.height, player.y));
+        },16);
+    });
+    btn.addEventListener('touchend', e => {clearInterval(interval);});
+});
+
+// Pause y reinicio
 function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
 function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);}
-
 function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
-
 function spawnObstacle(){let size=50; let x=Math.random()*(canvas.width-size); obstacles.push({x:x,y:-size,size:size});}
 
+// Dibujar
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.font='50px Arial';
@@ -115,6 +130,7 @@ function draw(){
   obstacles.forEach(o=>{ctx.fillText('💔',o.x,o.y);});
 }
 
+// Update
 function update(){
   if(gamePaused) return;
 
@@ -150,13 +166,14 @@ function update(){
   if(Math.random()<0.02) spawnObstacle();
 }
 
+// Game Loop
 function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}}
 
+// Game Over
 function gameOver(){
   explodeSound.play();
   document.getElementById('finalScore').innerText=score;
   document.getElementById('gameOverScreen').style.display='flex';
-  // En lugar de bloquear, dejamos que se pueda reiniciar
   bgMusic.pause();
 }
 </script>
