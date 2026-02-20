@@ -3,156 +3,191 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>❤️ Corazón vs Corazones Rotos 💔</title>
+
+<title>💖 Brisa & Brayan - Amor Infinito</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+
 <style>
-body, html {margin:0; padding:0; background:black; font-family:monospace; overflow:hidden;}
-#gameContainer{position:relative;width:100vw;height:100vh; display:flex; justify-content:center; align-items:center;}
-#gameCanvas{background:#111; border:4px solid #ff3b6b;}
-#loadingScreen{position:absolute;inset:0; background:#111; color:#ff3b6b; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:3000;}
-#loadingBar{width:300px; height:20px; border:2px solid #ff3b6b; margin-top:20px; overflow:hidden;}
-#loadingProgress{width:0%; height:100%; background:#ff7aa2; transition:width 0.2s;}
-#menu{position:absolute;top:10px;left:10px;color:white; display:flex; gap:10px; z-index:1000;}
-.menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
-.menuBtn:hover{opacity:0.8;}
-#scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
-.touchControls{display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%); z-index:1000;gap:8px;}
-.touchBtn{background:#ff3b6b;color:white;padding:15px;border-radius:8px;font-weight:bold; user-select:none;}
-#gameOverScreen{position:absolute;inset:0;background:rgba(0,0,0,0.9);color:white; display:flex; justify-content:center; align-items:center; flex-direction:column; font-size:24px; display:none;}
+:root{
+--rosa:#ff3b6b;
+--rosa2:#ff7aa2;
+--morado:#9b59ff;
+--glass:rgba(255,255,255,0.12);
+}
+body{
+margin:0;
+font-family:Poppins,sans-serif;
+background:linear-gradient(120deg,#ff4d6d,#9b59ff);
+color:white;
+overflow-x:hidden;
+}
+h1{font-family:"Great Vibes",cursive;font-size:40px;}
+.container{max-width:900px;margin:auto;padding:20px;}
+.card{background:var(--glass);backdrop-filter:blur(10px);padding:15px;border-radius:18px;margin:10px 0;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+.btn{background:linear-gradient(45deg,var(--rosa),var(--rosa2));border:none;padding:10px 15px;border-radius:20px;color:white;font-weight:bold;margin:4px;cursor:pointer;}
+.btn:hover{transform:scale(1.07);}
+.center{text-align:center;}
+.count{font-size:18px;margin:5px 0;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:1000;}
+.modal-box{background:white;color:#ff3b6b;padding:20px;border-radius:18px;width:90%;max-width:350px;text-align:center;}
+.modal-box input{width:90%;padding:10px;border-radius:12px;border:none;margin:10px 0;text-align:center;}
+.close{position:absolute;top:10px;right:20px;font-size:25px;cursor:pointer;}
+.heart{position:fixed;top:-20px;font-size:18px;animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh)}}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mem{background:white;color:#ff3b6b;padding:10px;border-radius:10px;cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;height:60px;user-select:none;}
+.burst{position:fixed;font-size:20px;animation:pop 1s forwards;}
+@keyframes pop{to{transform:translateY(-80px) scale(1.5);opacity:0}}
+#cargaScreen{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);color:white;justify-content:center;align-items:center;text-align:center;flex-direction:column;z-index:1001;}
+#barraCarga{width:80%;background:rgba(255,255,255,0.3);border-radius:20px;overflow:hidden;margin:20px auto;}
+#barraFill{width:0%;height:20px;background:linear-gradient(45deg,var(--rosa),var(--rosa2));border-radius:20px;transition:width 0.3s;}
 </style>
 </head>
+
 <body>
-<div id="gameContainer">
-  <canvas id="gameCanvas" width="600" height="800"></canvas>
-  <div id="loadingScreen">
-    <h1>Cargando...</h1>
-    <div id="loadingBar"><div id="loadingProgress"></div></div>
-  </div>
-  <div id="menu">
-    <button class="menuBtn" onclick="togglePause()">Pausa</button>
-    <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
-    <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
-  </div>
-  <div id="scoreBoard">
-    <div>Puntaje: <span id="score">0</span></div>
-    <div>Record: <span id="record">0</span></div>
-    <div>Vidas: <span id="lives">3</span></div>
-  </div>
-  <div class="touchControls" id="touchControls">
-    <button class="touchBtn" onclick="moveUp()">↑</button>
-    <button class="touchBtn" onclick="moveDown()">↓</button>
-    <button class="touchBtn" onclick="moveLeft()">←</button>
-    <button class="touchBtn" onclick="moveRight()">→</button>
-  </div>
-  <div id="gameOverScreen">
-    <h1>💔 ¡Perdiste!</h1>
-    <p>Puntaje final: <span id="finalScore">0</span></p>
-    <button class="menuBtn" onclick="restartGame()">Volver a jugar</button>
-    <button class="menuBtn" onclick="window.location='index.html'">Regresar al inicio</button>
-  </div>
+<div class="container">
+<div class="card center">
+<h1>Brisa 💖 Brayan</h1>
+<p>Amor a distancia… infinito, fuerte y real 💞</p>
 </div>
 
-<audio id="bgMusic" loop autoplay>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-</audio>
-<audio id="hitSound">
-  <source src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3" type="audio/mpeg">
-</audio>
-<audio id="explodeSound">
-  <source src="https://freesound.org/data/previews/351/351656_5121236-lq.mp3" type="audio/mpeg">
-</audio>
+<div class="card center">
+<div class="count" id="mensual"></div>
+<div class="count" id="anual"></div>
+</div>
+
+<div class="card center">
+<h2>💖 Amor acumulado: <span id="love">0</span></h2>
+<button class="btn" onclick="sumar()">TE AMO 💖</button>
+<button class="btn" onclick="lluvia()">Lluvia</button>
+<button class="btn" onclick="abrirLibro()">📖 Libro</button>
+</div>
+
+<div class="card">
+<h2>🎮 Juegos</h2>
+<button class="btn" onclick="quiz()">Quiz</button>
+<button class="btn" onclick="ruleta()">Ruleta</button>
+<button class="btn" onclick="regalo()">Buscar regalo</button>
+<button class="btn" onclick="memoria()">Memorama</button>
+<button class="btn" onclick="abrirCarga('game.html')">Ir a Juego 💖</button>
+<div id="juego"></div>
+</div>
+
+<div class="card center">
+<h2>💖 Record de juegos</h2>
+<p>Record más alto: <span id="recordMax">0</span></p>
+<p>Último record: <span id="recordLast">0</span></p>
+<button class="btn" onclick="resetRecord()">Resetear Records</button>
+</div>
+
+<div class="card">
+<h2>📖 Poema</h2>
+<p id="poema"></p>
+<button class="btn" onclick="poema()">Otro</button>
+</div>
+
+<div class="card">
+<h2>💌 Historia de nosotros</h2>
+<p>Desde aquel 22 de octubre del 2023… decidí quedarme contigo. Esta es nuestra segunda oportunidad, donde dejé mi ego, mis miedos… y elegí amarte de verdad. A veces siento miedo de perderte, de que no me ames igual… pero aún así te amo. Puede parecer que no te amo… pero por dentro mi corazón arde por ti, hay una llama que quiero que tú también veas. Mis metas contigo son simples: paz, risas, abrazos y una vida juntos.</p>
+</div>
+
+<div class="card">
+<h2>💖 100 cosas que amo de ti</h2>
+<div id="cosas"></div>
+</div>
+
+<button class="btn center" onclick="window.location.href='index.html'">🏠 Regresar al inicio</button>
+</div>
+
+<!-- MODAL LIBRO -->
+<div class="modal" id="modal">
+<div class="modal-box">
+<div class="close" onclick="cerrarLibro()">✖</div>
+<h3>🔐 Libro secreto</h3>
+<input id="clave" placeholder="Ingresa clave">
+<button class="btn" onclick="validarLibro()">Abrir</button>
+<p id="msgLibro"></p>
+</div>
+</div>
+
+<!-- CARGA -->
+<div id="cargaScreen" class="center">
+<h2>Cargando juego… 💖</h2>
+<div id="barraCarga">
+<div id="barraFill"></div>
+</div>
+</div>
 
 <script>
-const canvas=document.getElementById('gameCanvas');
-const ctx=canvas.getContext('2d');
-let score=0;
-let record=Number(localStorage.getItem('record'))||0;
-let lives=3;
-let gamePaused=false;
-let player={x:canvas.width/2-25,y:canvas.height-80,size:50};
-let obstacles=[];
-let speed=2;
-let bgMusic=document.getElementById('bgMusic');
-let hitSound=document.getElementById('hitSound');
-let explodeSound=document.getElementById('explodeSound');
-const isMobile= /Mobi|Android/i.test(navigator.userAgent);
-if(isMobile) document.getElementById('touchControls').style.display='flex';
+// FECHA
+const inicio=new Date("2023-10-22T00:00:00");
+function contador(){
+let now=new Date();
+let mensual=new Date(now.getFullYear(),now.getMonth(),22);
+if(now.getDate()>=22) mensual.setMonth(mensual.getMonth()+1);
+let anual=new Date(now.getFullYear(),9,22);
+if(now>anual) anual.setFullYear(anual.getFullYear()+1);
+function calc(d){let diff=d-now;let dias=Math.floor(diff/86400000);let h=Math.floor((diff/3600000)%24);let m=Math.floor((diff/60000)%60);let s=Math.floor((diff/1000)%60);return `${dias}d ${h}h ${m}m ${s}s`;}
+document.getElementById("mensual").innerText="💖 Mensual en: "+calc(mensual);
+document.getElementById("anual").innerText="🎆 Anual en: "+calc(anual);
+}
+setInterval(contador,1000);
 
-// Loading
-let loadProgress=0;
-const loadingInterval=setInterval(()=>{
-  loadProgress+=5;
-  document.getElementById('loadingProgress').style.width=loadProgress+'%';
-  if(loadProgress>=100){clearInterval(loadingInterval); document.getElementById('loadingScreen').style.display='none'; startGame();}
+// AMOR
+let love=Number(localStorage.getItem("love"))||0;
+function sumar(){love++;localStorage.setItem("love",love);document.getElementById("love").innerText=love;explosion();}
+function lluvia(){for(let i=0;i<50;i++){let h=document.createElement("div");h.className="heart";h.innerText="💖";h.style.left=Math.random()*100+"vw";h.style.animationDuration=3+Math.random()*3+"s";document.body.appendChild(h);setTimeout(()=>h.remove(),6000);}}
+function explosion(){for(let i=0;i<15;i++){let b=document.createElement("div");b.className="burst";b.innerText="💖";b.style.left=Math.random()*100+"vw";b.style.top=Math.random()*100+"vh";document.body.appendChild(b);setTimeout(()=>b.remove(),1000);}}
+
+// POEMAS
+const poemas=["Te amo en silencio, en gritos, en sueños y en realidad...","Mi vida tiene sentido desde que tú estás en ella...","Eres la razón por la que sonrío sin razón...","Cada latido me recuerda tu amor eterno...","Si existiera otra vida, aún te elegiría a ti..."];
+function poema(){document.getElementById("poema").innerText=poemas[Math.floor(Math.random()*poemas.length)];}
+poema();
+
+// 100 COSAS
+const cosasAmo=["Tu sonrisa que ilumina mi día","Tu mirada que me enamora","Tu risa contagiosa","Tu forma de abrazarme","Tu paciencia infinita","Tu ternura","Tu forma de hablar","Tus detalles inesperados","Tu apoyo constante","Tu valentía","Tu creatividad","Tu sentido del humor","Tu energía positiva","Tu pasión por la vida","Tu honestidad","Tu perseverancia","Tu generosidad","Tu forma de bailar","Tu calidez","Tu voz melodiosa","Tu forma de escuchar","Tu cariño sincero","Tu alegría","Tus besos","Tus abrazos","Tu compañía","Tu amor incondicional","Tu empatía","Tu fuerza","Tu entusiasmo","Tu mirada profunda","Tu paciencia","Tu estilo único","Tu espíritu aventurero","Tu creatividad","Tu forma de cuidarme","Tu dedicación","Tu nobleza","Tu optimismo","Tu sinceridad","Tu sonrisa traviesa","Tu ternura infinita","Tu elegancia","Tu dulzura","Tu perseverancia","Tu cariño","Tu mirada tierna","Tu capacidad de reír","Tu energía","Tu comprensión","Tu forma de motivarme","Tu cariño especial","Tu apoyo emocional","Tu sensibilidad","Tu pasión por tus sueños","Tu lealtad","Tu inteligencia","Tu generosidad infinita","Tu estilo único","Tu paciencia infinita","Tu creatividad sin límites","Tu dulzura","Tu alegría contagiosa","Tu magia especial","Tu sonrisa eterna","Tus abrazos cálidos","Tu mirada que calma","Tu voz que reconforta","Tu fuerza interior","Tu amor sincero","Tu espíritu bondadoso","Tu entusiasmo por la vida","Tu empatía única","Tu ternura adorable","Tu pasión inigualable","Tu risa contagiosa","Tu capacidad de amar","Tu cariño especial","Tu presencia","Tu compañía invaluable","Tu forma de hacerme feliz","Tu amor verdadero","Tu corazón noble","Tu sonrisa encantadora","Tu forma de sorprenderme","Tu mirada penetrante","Tu cariño constante","Tu magia en los pequeños detalles","Tu abrazo reconfortante","Tu paciencia infinita","Tu lealtad inquebrantable","Tu dulzura infinita","Tu forma de inspirarme","Tu alegría desbordante","Tu ternura constante","Tu apoyo incondicional","Tu fuerza increíble","Tu mirada que enamora","Tu entusiasmo contagioso","Tu amor profundo","Tu energía radiante","Tu sonrisa perfecta","Tu compañía maravillosa","Tu cariño sincero","Tu forma de motivarme siempre","Tu amor único"];
+const contenedorCosas=document.getElementById("cosas");
+cosasAmo.forEach(c=>{let p=document.createElement("p");p.innerText="💖 "+c;contenedorCosas.appendChild(p);});
+
+// MINI JUEGOS
+function quiz(){document.getElementById("juego").innerText="Respuesta correcta: TE AMO 💖";sumar();}
+function ruleta(){let premios=["Besos","Abrazos","Cita","Viaje","Masaje"];document.getElementById("juego").innerText=premios[Math.floor(Math.random()*premios.length)];sumar();}
+function regalo(){document.getElementById("juego").innerText="🎁 Encontraste un regalo secreto 💖";sumar();}
+function memoria(){let emojis=["💖","💖","💘","💘","💝","💝","💞","💞","💕","💕","❣️","❣️"];emojis.sort(()=>Math.random()-0.5);let first=null;let second=null;let matches=0;let html="";emojis.forEach((e,i)=>{html+=`<div class="mem" onclick="clickMemorama(this,${i})">?</div>`});document.getElementById("juego").innerHTML="<div class='grid'>"+html+"</div>";window.clickMemorama=function(el,index){if(el.innerText!=="?") return;el.innerText=emojis[index];if(!first){first={el,index}}else{second={el,index};setTimeout(()=>{if(emojis[first.index]===emojis[second.index]){first.el.style.background="#ff7aa2";second.el.style.background="#ff7aa2";matches++;if(matches===emojis.length/2){alert("🎉 ¡Terminaste el memorama, mi amor! 💖");sumar();}}else{first.el.innerText="?";second.el.innerText="?";}first=null;second=null;},800);}}}
+
+// LIBRO
+function abrirLibro(){document.getElementById("modal").style.display="flex";}
+function cerrarLibro(){document.getElementById("modal").style.display="none";}
+function validarLibro(){let c=document.getElementById("clave").value.toLowerCase();if(c=="te amo"){document.getElementById("msgLibro").innerText="Ups nena aún no está listo 💔";}else{document.getElementById("msgLibro").innerText="Clave incorrecta";}}
+
+// LLUVIA
+function fiesta(){alert("💖 FELIZ MES MI AMOR 💖");lluvia();}
+
+// RECORDS
+let recordMax=Number(localStorage.getItem("recordMax"))||0;
+let recordLast=Number(localStorage.getItem("recordLast"))||0;
+document.getElementById("recordMax").innerText=recordMax;
+document.getElementById("recordLast").innerText=recordLast;
+
+function resetRecord(){
+recordMax=0; recordLast=0;
+localStorage.setItem("recordMax",recordMax);
+localStorage.setItem("recordLast",recordLast);
+document.getElementById("recordMax").innerText=recordMax;
+document.getElementById("recordLast").innerText=recordLast;
+}
+
+// CARGA Y REDIRECCIÓN
+function abrirCarga(url){
+document.getElementById("cargaScreen").style.display="flex";
+let barra=document.getElementById("barraFill");
+let progreso=0;
+let interval=setInterval(()=>{
+progreso+=2;
+barra.style.width=progreso+"%";
+if(progreso>=100){clearInterval(interval);window.location.href=url;}
 },100);
-
-// Controls
-let keys={};
-document.addEventListener('keydown',e=>{keys[e.key]=true;});
-document.addEventListener('keyup',e=>{keys[e.key]=false;});
-
-function moveUp(){player.y-=15;}
-function moveDown(){player.y+=15;}
-function moveLeft(){player.x-=15;}
-function moveRight(){player.x+=15;}
-
-function togglePause(){gamePaused=!gamePaused; if(gamePaused){bgMusic.pause();}else{bgMusic.play(); requestAnimationFrame(gameLoop);}}
-function restartGame(){score=0; lives=3; obstacles=[]; speed=2; player.x=canvas.width/2-25; player.y=canvas.height-80; document.getElementById('gameOverScreen').style.display='none'; gamePaused=false; bgMusic.play(); requestAnimationFrame(gameLoop);}
-
-function startGame(){bgMusic.play(); requestAnimationFrame(gameLoop);}
-
-function spawnObstacle(){let size=50; let x=Math.random()*(canvas.width-size); obstacles.push({x:x,y:-size,size:size});}
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.font='50px Arial';
-  ctx.fillText('❤️',player.x,player.y);
-  ctx.font='50px Arial';
-  obstacles.forEach(o=>{ctx.fillText('💔',o.x,o.y);});
-}
-
-function update(){
-  if(gamePaused) return;
-
-  if(keys['w']||keys['ArrowUp']) player.y-=5;
-  if(keys['s']||keys['ArrowDown']) player.y+=5;
-  if(keys['a']||keys['ArrowLeft']) player.x-=5;
-  if(keys['d']||keys['ArrowRight']) player.x+=5;
-
-  player.x=Math.max(0,Math.min(canvas.width-50,player.x));
-  player.y=Math.max(50,Math.min(canvas.height,player.y));
-
-  obstacles.forEach(o=>o.y+=speed);
-
-  obstacles.forEach((o,i)=>{
-    if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
-      hitSound.play();
-      if(navigator.vibrate) navigator.vibrate(100);
-      lives--;
-      obstacles.splice(i,1);
-      if(lives<=0){gameOver();}
-    }
-  });
-
-  obstacles=obstacles.filter(o=>o.y<canvas.height+50);
-
-  score++;
-  if(score%20===0) speed+=0.5;
-  if(score>record){record=score; localStorage.setItem('record',record);}
-  document.getElementById('score').innerText=score;
-  document.getElementById('record').innerText=record;
-  document.getElementById('lives').innerText=lives;
-
-  if(Math.random()<0.02) spawnObstacle();
-}
-
-function gameLoop(){if(!gamePaused){update(); draw(); requestAnimationFrame(gameLoop);}}
-
-function gameOver(){
-  explodeSound.play();
-  document.getElementById('finalScore').innerText=score;
-  document.getElementById('gameOverScreen').style.display='flex';
-  // En lugar de bloquear, dejamos que se pueda reiniciar
-  bgMusic.pause();
 }
 </script>
 </body>
