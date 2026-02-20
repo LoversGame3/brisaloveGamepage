@@ -11,6 +11,9 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
 #loadingScreen{position:absolute;inset:0; background:#111; color:#ff3b6b; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:3000;}
 #loadingBar{width:300px; height:20px; border:2px solid #ff3b6b; margin-top:20px; overflow:hidden;}
 #loadingProgress{width:0%; height:100%; background:#ff7aa2; transition:width 0.2s;}
+#menu{position:absolute;top:10px;left:10px;color:white; display:flex; gap:10px; z-index:1000;}
+.menuBtn{background:#ff3b6b;color:white;border:none;padding:8px 12px;font-weight:bold;cursor:pointer;}
+.menuBtn:hover{opacity:0.8;}
 #scoreBoard{position:absolute;top:10px;right:10px;color:white;text-align:right; z-index:1000;}
 .touchControls{display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:2000; gap:12px; display:flex;}
 .touchBtn{background:#ff3b6b;color:white;padding:18px 20px;border-radius:10px;font-weight:bold; user-select:none; font-size:20px;}
@@ -26,7 +29,14 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <div id="loadingBar"><div id="loadingProgress"></div></div>
   </div>
 
-  <!-- Controles táctiles -->
+  <!-- Menu superior -->
+  <div id="menu">
+    <button class="menuBtn" onclick="togglePause()">Pausa</button>
+    <button class="menuBtn" onclick="restartGame()">Reiniciar</button>
+    <button class="menuBtn" onclick="window.location='index.html'">Regresar</button>
+  </div>
+
+  <!-- Controles táctiles para mover -->
   <div class="touchControls" id="touchControls">
     <button class="touchBtn" onclick="moveUp()">↑</button>
     <button class="touchBtn" onclick="moveLeft()">←</button>
@@ -44,6 +54,7 @@ body, html {margin:0; padding:0; background:black; font-family:monospace; overfl
     <h1>💔 ¡Perdiste!</h1>
     <p>Puntaje final: <span id="finalScore">0</span></p>
     <button class="touchBtn" onclick="restartGame()">Volver a jugar</button>
+    <button class="touchBtn" onclick="window.location='index.html'">Regresar al inicio</button>
   </div>
 </div>
 
@@ -94,11 +105,20 @@ let keys = {};
 document.addEventListener('keydown', e => { keys[e.key] = true; });
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Funciones de movimiento táctil
+// Movimiento táctil
 function moveUp(){player.y -= 15;}
 function moveDown(){player.y += 15;}
 function moveLeft(){player.x -= 15;}
 function moveRight(){player.x += 15;}
+
+// Movimiento con toque en pantalla
+canvas.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  if(touch.clientX < window.innerWidth/2) player.x -= 20; 
+  else player.x += 20;
+  if(touch.clientY < window.innerHeight/2) player.y -= 20;
+  else player.y += 20;
+});
 
 function togglePause(){
   gamePaused = !gamePaused;
@@ -131,20 +151,16 @@ function draw(){
 function update(){
   if(gamePaused) return;
 
-  // Movimientos teclado
   if(keys['w']||keys['ArrowUp']) player.y -= 5;
   if(keys['s']||keys['ArrowDown']) player.y += 5;
   if(keys['a']||keys['ArrowLeft']) player.x -= 5;
   if(keys['d']||keys['ArrowRight']) player.x += 5;
 
-  // Límites
   player.x = Math.max(0, Math.min(canvas.width-50, player.x));
   player.y = Math.max(50, Math.min(canvas.height, player.y));
 
-  // Obstáculos
   obstacles.forEach(o => o.y += speed);
 
-  // Colisiones
   obstacles.forEach((o,i)=>{
     if(player.x<o.x+o.size && player.x+50>o.x && player.y<o.y+o.size && player.y+50>o.y){
       hitSound.play();
@@ -157,21 +173,18 @@ function update(){
 
   obstacles = obstacles.filter(o => o.y < canvas.height + 50);
 
-  // Puntaje
   score++;
   document.getElementById('score').innerText = score;
   if(score > record){record=score; localStorage.setItem('record',record);}
   document.getElementById('record').innerText = record;
   document.getElementById('lives').innerText = lives;
 
-  // Aumentar velocidad cada 10 segundos
   speedTimer++;
   if(speedTimer >= 600){ // 60fps * 10s
     speed += 0.3;
     speedTimer = 0;
   }
 
-  // Generar obstáculos
   if(Math.random() < 0.02) spawnObstacle();
 }
 
